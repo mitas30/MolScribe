@@ -212,7 +212,7 @@ def _expand_carbon(elements: list):
         # recurse if `elt` itself is a list (nested formula)
         elif isinstance(elt, list):
             new_elt = _expand_carbon(elt)
-            for _ in range(num):
+            for _ in range(min(num,1000)):
                 expanded.append(new_elt)
             i += 1
         # simplest case: simply append `elt` `num` times
