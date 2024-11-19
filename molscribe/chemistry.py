@@ -561,19 +561,20 @@ def _convert_graph_to_smiles(coords, symbols, edges, image=None, debug=False):
         return pred_smiles, pred_molblock, mol, success
     return pred_smiles, pred_molblock, success
 
-
+#TODO: num_workers変数の廃止をちゃんと行う
 def convert_graph_to_smiles(coords, symbols, edges, images=None, num_workers=16):
     if images is None:
         args_zip = zip(coords, symbols, edges)
     else:
         args_zip = zip(coords, symbols, edges, images)
-
-    if num_workers <= 1:
-        results = itertools.starmap(_convert_graph_to_smiles, args_zip)
-        results = list(results)
-    else:
-        with multiprocessing.Pool(num_workers) as p:
-            results = p.starmap(_convert_graph_to_smiles, args_zip, chunksize=128)
+        
+    results = []
+    for args in args_zip:
+        try:
+            result= _convert_graph_to_smiles(*args)
+            results.append(result)
+        except Exception as e:
+            print(e)
 
     smiles_list, molblock_list, success = zip(*results)
     r_success = np.mean(success)
