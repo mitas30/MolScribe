@@ -167,7 +167,7 @@ def _parse_tokens(tokens: list):
             elt = tokens[i]
         j += 1
         if j < len(tokens) and tokens[j].isnumeric():
-            num = int(tokens[j])
+            num = min(int(tokens[j]),1000)
             j += 1
         else:
             num = 1
@@ -187,7 +187,7 @@ def _parse_formula(formula: str):
     #     tokens = FORMULA_REGEX_BACKUP.findall(formula)
     return _parse_tokens(tokens)
 
-
+# ? 変更済み
 def _expand_carbon(elements: list):
     """
     Given list of pairs `(elt, num)`, output single list of all atoms in order,
@@ -198,6 +198,8 @@ def _expand_carbon(elements: list):
     i = 0
     while i < len(elements):
         elt, num = elements[i]
+        if num >=1000:
+            return [], False
         # expand carbon sequence
         if elt == 'C' and num > 1 and i + 1 < len(elements):
             next_elt, next_num = elements[i + 1]
@@ -212,7 +214,7 @@ def _expand_carbon(elements: list):
         # recurse if `elt` itself is a list (nested formula)
         elif isinstance(elt, list):
             new_elt = _expand_carbon(elt)
-            for _ in range(min(num,1000)):
+            for _ in range(num):
                 expanded.append(new_elt)
             i += 1
         # simplest case: simply append `elt` `num` times
@@ -220,7 +222,7 @@ def _expand_carbon(elements: list):
             for _ in range(num):
                 expanded.append(elt)
             i += 1
-    return expanded
+    return expanded,True
 
 
 def _expand_abbreviation(abbrev):
@@ -356,11 +358,16 @@ def get_smiles_from_symbol(symbol, mol, atom, bonds):
     """
     if symbol in ABBREVIATIONS:
         return ABBREVIATIONS[symbol].smiles
+    # ? 本当は、この部分をもっと変更すると良い気がする
+    # ? 例えば、(原子)(num)ときたときに、numが3桁以下である場合のみ...といったようなこと。
     if len(symbol) > 20:
         return None
 
     total_bonds = int(sum([bond.GetBondTypeAsDouble() for bond in bonds]))
-    formula_list = _expand_carbon(_parse_formula(symbol))
+    # HACK: C565656...みたいなとき、num>1000なら success=Falseにして展開を諦める
+    formula_list,success = _expand_carbon(_parse_formula(symbol))
+    if not success:
+        return None
     smiles, bonds_left, num_trails, success = _condensed_formula_list_to_smiles(formula_list, total_bonds, None)
     if success:
         return smiles
@@ -438,6 +445,7 @@ def _expand_functional_group(mol, mappings, debug=False):
                 # create mol object for abbreviation/condensed formula from its SMILES
                 mol_r = convert_smiles_to_mol(sub_smiles)
 
+                #? 明らかにおかしいやつでも、mol_rができなければ、展開せずそのまま続行してくれる。
                 if mol_r is None:
                     # atom.SetAtomicNum(6)
                     atom.SetIsotope(0)
