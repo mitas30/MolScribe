@@ -21,6 +21,6 @@ setup(name='MolScribe',
         "SmilesPE==0.0.3",
         "OpenNMT-py==2.2.0",
         "rdkit-pypi>=2021.03.2",
-        "albumentations @ git+https://github.com/albumentations-team/albumentations@37e714fd2e326f6f88778e425f98c2de8c8d5372",
+        "albumentations==1.1.0",
         "timm @ git+https://github.com/rwightman/pytorch-image-models.git@54a6cca27a9a3e092a07457f5d56709da56e3cf5"
       ])
