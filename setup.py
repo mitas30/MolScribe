@@ -16,11 +16,11 @@ setup(name='MolScribe',
         "numpy",
         "torch>=1.11.0",
         "pandas",
+        "timm",
         "matplotlib",
         "opencv-python>=4.5.5.64",
         "SmilesPE==0.0.3",
         "OpenNMT-py==2.2.0",
         "rdkit-pypi>=2021.03.2",
         "albumentations==1.1.0",
-        "timm @ git+https://github.com/rwightman/pytorch-image-models.git@54a6cca27a9a3e092a07457f5d56709da56e3cf5"
       ])
