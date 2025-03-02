@@ -187,8 +187,7 @@ def _parse_formula(formula: str):
     #     tokens = FORMULA_REGEX_BACKUP.findall(formula)
     return _parse_tokens(tokens)
 
-# ? 変更済み
-def _expand_carbon(elements: list):
+def _expand_carbon(elements: list[tuple[str,int]])->list[str]:
     """
     Given list of pairs `(elt, num)`, output single list of all atoms in order,
     expanding carbon sequences (CaXb where a > 1 and X is halogen) if necessary
@@ -199,12 +198,12 @@ def _expand_carbon(elements: list):
     while i < len(elements):
         elt, num = elements[i]
         # skip unreasonable number of atoms
-        if num > 100000:
+        if num > 1000:
             i += 1; continue
         # expand carbon sequence
         if elt == 'C' and num > 1 and i + 1 < len(elements):
             next_elt, next_num = elements[i + 1]
-            if next_num > 100000:
+            if next_num > 1000:
                 i += 1; continue
             quotient, remainder = next_num // num, next_num % num
             for _ in range(num):
@@ -225,7 +224,7 @@ def _expand_carbon(elements: list):
             for _ in range(num):
                 expanded.append(elt)
             i += 1
-    return expanded,True
+    return expanded
 
 
 def _expand_abbreviation(abbrev):
@@ -354,23 +353,18 @@ def _condensed_formula_list_to_smiles(formula_list, start_bond, end_bond=None, d
     return dfs('', start_bond, cur_idx, add_idx)
 
 
-def get_smiles_from_symbol(symbol, mol, atom, bonds):
+def get_smiles_from_symbol(symbol, mol, atom, bonds)->str|None:
     """
     Convert symbol (abbrev. or condensed formula) to smiles
     If condensed formula, determine parsing direction and num. bonds on each side using coordinates
     """
     if symbol in ABBREVIATIONS:
         return ABBREVIATIONS[symbol].smiles
-    # ? 本当は、この部分をもっと変更すると良い気がする
-    # ? 例えば、(原子)(num)ときたときに、numが3桁以下である場合のみ...といったようなこと。
     if len(symbol) > 20:
         return None
 
     total_bonds = int(sum([bond.GetBondTypeAsDouble() for bond in bonds]))
-    # HACK: C565656...みたいなとき、num>1000なら success=Falseにして展開を諦める
-    formula_list,success = _expand_carbon(_parse_formula(symbol))
-    if not success:
-        return None
+    formula_list = _expand_carbon(_parse_formula(symbol))
     smiles, bonds_left, num_trails, success = _condensed_formula_list_to_smiles(formula_list, total_bonds, None)
     if success:
         return smiles
