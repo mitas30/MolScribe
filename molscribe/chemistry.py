@@ -1,4 +1,5 @@
 import copy
+import logging
 import traceback
 import numpy as np
 import multiprocessing
@@ -12,6 +13,8 @@ rdkit.RDLogger.DisableLog('rdApp.*')
 from SmilesPE.pretokenizer import atomwise_tokenizer
 
 from .constants import RGROUP_SYMBOLS, ABBREVIATIONS, VALENCES, FORMULA_REGEX
+
+logger = logging.getLogger(__name__)
 
 
 def is_valid_mol(s, format_='atomtok'):
@@ -576,10 +579,11 @@ def convert_graph_to_smiles(coords, symbols, edges, images=None, num_workers=16)
     results = []
     for args in args_zip:
         try:
-            result= _convert_graph_to_smiles(*args)
+            result = _convert_graph_to_smiles(*args)
             results.append(result)
         except Exception as e:
-            print(e)
+            logger.warning(f"Failed to convert graph to SMILES: {e}", exc_info=True)
+            results.append(('', '', False))   # 落とさず、長さを保つ
 
     smiles_list, molblock_list, success = zip(*results)
     r_success = np.mean(success)
